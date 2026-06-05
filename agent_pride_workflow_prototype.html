@@ -1,0 +1,889 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --blue:#1a56c4;--blue-l:#dbeafe;--blue-d:#1e3a6e;
+    --green:#166534;--green-l:#dcfce7;--green-d:#14532d;
+    --amber:#92400e;--amber-l:#fef3c7;--amber-d:#78350f;
+    --red:#991b1b;--red-l:#fee2e2;
+    --gray:#374151;--gray-l:#f3f4f6;--gray-2:#6b7280;
+    --border:#e5e7eb;--text:#111827;--text2:#6b7280;
+    --font:'Space Grotesk',sans-serif;
+    --mono:'JetBrains Mono',monospace;
+  }
+  body{font-family:var(--font);color:var(--text);background:transparent;padding:0}
+  
+  /* GUARD rails */
+  .guard-rail{
+    background:linear-gradient(90deg,#7f1d1d,#991b1b,#7f1d1d);
+    color:#fff;padding:10px 20px;display:flex;align-items:center;
+    gap:8px;font-size:12px;font-weight:600;letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+  .guard-rail i{font-size:16px}
+  .guard-pill{
+    background:rgba(255,255,255,.18);border-radius:999px;
+    padding:3px 10px;font-size:11px;font-weight:500;margin-left:4px;
+  }
+  
+  /* Simulation area */
+  .sim-wrap{padding:0 0 0;background:var(--gray-l)}
+  
+  /* Step indicators */
+  .step-nav{
+    display:flex;align-items:center;background:#fff;
+    border-bottom:1px solid var(--border);padding:0 20px;
+    overflow-x:auto;gap:0;
+  }
+  .step-btn{
+    padding:12px 18px;font-family:var(--font);font-size:13px;
+    font-weight:500;border:none;background:none;cursor:pointer;
+    color:var(--text2);border-bottom:3px solid transparent;
+    white-space:nowrap;transition:all .2s;display:flex;align-items:center;gap:6px;
+  }
+  .step-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+  .step-btn .dot{
+    width:18px;height:18px;border-radius:50%;background:var(--gray-l);
+    display:flex;align-items:center;justify-content:center;
+    font-size:10px;font-weight:700;color:var(--text2);
+  }
+  .step-btn.active .dot{background:var(--blue);color:#fff}
+  .step-btn.done .dot{background:#16a34a;color:#fff}
+  
+  /* Main canvas */
+  .canvas{display:flex;min-height:420px;gap:0}
+  
+  /* Agent panels */
+  .agent-col{
+    flex:1;padding:20px;border-right:1px solid var(--border);
+    background:#fff;display:flex;flex-direction:column;gap:12px;
+  }
+  .agent-col:last-child{border-right:none}
+  
+  .agent-header{
+    display:flex;align-items:center;gap:10px;padding:14px;
+    border-radius:10px;border:1.5px solid;
+  }
+  .agent-icon{width:42px;height:42px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+  .agent-name{font-size:15px;font-weight:700;line-height:1.2}
+  .agent-role{font-size:11px;font-weight:500;opacity:.7;text-transform:uppercase;letter-spacing:.06em;margin-top:1px}
+  
+  .agent-col.scout .agent-header{background:var(--blue-l);border-color:#93c5fd;color:var(--blue-d)}
+  .agent-col.scout .agent-icon{background:var(--blue);color:#fff}
+  .agent-col.guardian .agent-header{background:var(--green-l);border-color:#86efac;color:var(--green-d)}
+  .agent-col.guardian .agent-icon{background:var(--green);color:#fff}
+  .agent-col.hunter .agent-header{background:var(--amber-l);border-color:#fcd34d;color:var(--amber-d)}
+  .agent-col.hunter .agent-icon{background:#d97706;color:#fff}
+  
+  /* Data packets */
+  .packet{
+    border:1px solid var(--border);border-radius:8px;
+    padding:10px 12px;font-size:12px;background:#fafafa;
+    transition:all .3s;
+  }
+  .packet.active{border-color:var(--blue);background:var(--blue-l);box-shadow:0 0 0 3px rgba(26,86,196,.1)}
+  .packet.success{border-color:#16a34a;background:var(--green-l)}
+  .packet.warning{border-color:#d97706;background:var(--amber-l)}
+  .packet.danger{border-color:#dc2626;background:var(--red-l)}
+  
+  .packet-label{font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);margin-bottom:5px}
+  .packet-value{font-family:var(--mono);font-size:12px;color:var(--text)}
+  .packet-row{display:flex;justify-content:space-between;align-items:center;margin-top:4px}
+  .tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.06em}
+  .tag-blue{background:var(--blue-l);color:var(--blue-d)}
+  .tag-green{background:var(--green-l);color:var(--green-d)}
+  .tag-amber{background:var(--amber-l);color:var(--amber-d)}
+  .tag-red{background:var(--red-l);color:var(--red)}
+  .tag-gray{background:var(--gray-l);color:var(--gray)}
+  
+  /* Activity log */
+  .log-area{
+    background:#0f172a;border-radius:0;padding:14px 18px;
+    font-family:var(--mono);font-size:11.5px;min-height:120px;
+    max-height:160px;overflow-y:auto;
+  }
+  .log-line{margin-bottom:4px;display:flex;gap:8px;align-items:flex-start;line-height:1.5}
+  .log-ts{color:#64748b;flex-shrink:0}
+  .log-agent{flex-shrink:0;font-weight:600}
+  .log-msg{color:#cbd5e1}
+  .log-agent.scout{color:#60a5fa}
+  .log-agent.guardian{color:#4ade80}
+  .log-agent.hunter{color:#fbbf24}
+  .log-agent.system{color:#a78bfa}
+  .log-agent.guard{color:#f87171}
+  
+  /* Arrow transit */
+  .transit-wrap{position:relative;display:flex;align-items:center;justify-content:center;padding:8px 0}
+  .transit-arrow{display:flex;align-items:center;gap:4px;font-size:11px;font-weight:600;color:var(--text2);padding:5px 10px;border-radius:999px;border:1px dashed var(--border);background:#fff;transition:all .3s}
+  .transit-arrow.active{border-color:var(--blue);color:var(--blue);background:var(--blue-l);animation:pulse-border 1s ease-in-out infinite}
+  @keyframes pulse-border{0%,100%{box-shadow:0 0 0 0 rgba(26,86,196,.3)}50%{box-shadow:0 0 0 5px rgba(26,86,196,0)}}
+  
+  /* Controls */
+  .controls{
+    display:flex;align-items:center;gap:10px;padding:14px 20px;
+    background:#fff;border-top:1px solid var(--border);flex-wrap:wrap;
+  }
+  .btn{
+    padding:8px 18px;border-radius:7px;border:1.5px solid;
+    font-family:var(--font);font-size:13px;font-weight:600;
+    cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:6px;
+  }
+  .btn-primary{background:var(--blue);border-color:var(--blue);color:#fff}
+  .btn-primary:hover{background:#1d4ed8}
+  .btn-primary:disabled{opacity:.5;cursor:not-allowed}
+  .btn-secondary{background:#fff;border-color:var(--border);color:var(--text)}
+  .btn-secondary:hover{border-color:var(--text2);background:var(--gray-l)}
+  .btn-danger{background:#dc2626;border-color:#dc2626;color:#fff}
+  .btn-success{background:#16a34a;border-color:#16a34a;color:#fff}
+  
+  .status-bar{
+    display:flex;align-items:center;gap:6px;margin-left:auto;
+    font-size:12px;font-weight:500;color:var(--text2);
+  }
+  .status-dot{width:8px;height:8px;border-radius:50%;background:#d1d5db}
+  .status-dot.running{background:#16a34a;animation:blink .8s ease-in-out infinite}
+  .status-dot.paused{background:#d97706}
+  .status-dot.done{background:#1a56c4}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+  
+  /* Loan input form */
+  .input-form{
+    background:var(--blue-l);border:1px solid #93c5fd;border-radius:10px;padding:12px;
+  }
+  .form-row{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+  .form-row:last-child{margin-bottom:0}
+  .form-label{font-size:11px;font-weight:600;color:var(--blue-d);min-width:90px}
+  .form-input{
+    font-family:var(--mono);font-size:12px;padding:5px 8px;
+    border:1px solid #93c5fd;border-radius:5px;background:#fff;color:var(--text);
+    flex:1;min-width:100px;
+  }
+  .form-select{
+    font-family:var(--font);font-size:12px;padding:5px 8px;
+    border:1px solid #93c5fd;border-radius:5px;background:#fff;color:var(--text);flex:1;
+  }
+  
+  /* Progress dots for tiers */
+  .tier-dots{display:flex;gap:4px;margin-top:6px}
+  .tier-dot{width:8px;height:8px;border-radius:50%;background:var(--border)}
+  .tier-dot.pass{background:#16a34a}
+  .tier-dot.fail{background:#dc2626}
+  .tier-dot.active{background:var(--blue);animation:blink .8s ease-in-out infinite}
+  
+  /* PRIDE loop indicator */
+  .pride-loop{
+    display:flex;gap:6px;padding:8px 12px;background:#f9fafb;
+    border:1px solid var(--border);border-radius:8px;flex-wrap:wrap;
+  }
+  .pride-step{
+    font-size:10px;font-weight:700;padding:4px 8px;border-radius:5px;
+    text-transform:uppercase;letter-spacing:.06em;border:1px solid var(--border);
+    color:var(--text2);background:#fff;transition:all .3s;
+  }
+  .pride-step.active{background:var(--blue);border-color:var(--blue);color:#fff}
+  .pride-step.done{background:var(--green-l);border-color:#86efac;color:var(--green-d)}
+  .pride-step.paused{background:var(--amber-l);border-color:#fcd34d;color:var(--amber-d);animation:pulse-border 1.2s ease-in-out infinite}
+  
+  /* Pause overlay */
+  .pause-overlay{
+    display:none;position:relative;background:linear-gradient(135deg,#fef3c7,#fffbeb);
+    border:2px solid #d97706;border-radius:10px;padding:14px 16px;margin:0 0 8px;
+  }
+  .pause-overlay.visible{display:block}
+  .pause-title{font-size:13px;font-weight:700;color:var(--amber-d);margin-bottom:4px;display:flex;align-items:center;gap:6px}
+  .pause-desc{font-size:12px;color:#92400e;line-height:1.5}
+  
+  .scroll-hint{font-size:11px;color:var(--text2);padding:4px 0;text-align:center}
+</style>
+
+<h2 class="sr-only">Agent Pride Workflow live prototype — simulate Scout to Guardian to Hunter loan processing</h2>
+
+<!-- GUARD TOP RAIL -->
+<div class="guard-rail">
+  <i class="ti ti-shield-check" aria-hidden="true"></i>
+  GUARD SAFETY RAILS
+  <span class="guard-pill">Bias Blocks</span>
+  <span class="guard-pill">Fraud Alerts</span>
+  <span class="guard-pill">Audit Trails</span>
+</div>
+
+<!-- STEP NAV -->
+<div class="step-nav" id="stepNav">
+  <button class="step-btn active" onclick="goStep(0)" id="stepBtn0">
+    <span class="dot">1</span> Scout Input
+  </button>
+  <button class="step-btn" onclick="goStep(1)" id="stepBtn1">
+    <span class="dot">2</span> Guardian Triage
+  </button>
+  <button class="step-btn" onclick="goStep(2)" id="stepBtn2">
+    <span class="dot">3</span> Decision Gate
+  </button>
+  <button class="step-btn" onclick="goStep(3)" id="stepBtn3">
+    <span class="dot">4</span> Hunter Review
+  </button>
+  <button class="step-btn" onclick="goStep(4)" id="stepBtn4">
+    <span class="dot">5</span> Final Outcome
+  </button>
+</div>
+
+<!-- MAIN CANVAS -->
+<div class="sim-wrap">
+
+  <!-- STEP 0: Scout Input -->
+  <div id="panel0" class="canvas" style="flex-direction:column;min-height:auto">
+    <div style="display:flex;gap:0">
+      <!-- Scout -->
+      <div class="agent-col scout" style="min-width:0">
+        <div class="agent-header">
+          <div class="agent-icon"><i class="ti ti-user-search" aria-hidden="true"></i></div>
+          <div>
+            <div class="agent-name">Scout Agent</div>
+            <div class="agent-role">Financial Literacy Coach</div>
+          </div>
+        </div>
+        <div class="input-form">
+          <div class="packet-label" style="margin-bottom:8px">New Loan Application</div>
+          <div class="form-row">
+            <span class="form-label">Borrower ID</span>
+            <input class="form-input" id="inp-borrower" value="KE-2024-07734" />
+          </div>
+          <div class="form-row">
+            <span class="form-label">Amount (KES)</span>
+            <input class="form-input" id="inp-amount" type="number" value="12000" />
+          </div>
+          <div class="form-row">
+            <span class="form-label">Savings Score</span>
+            <input class="form-input" id="inp-savings" type="number" min="0" max="100" value="72" />
+          </div>
+          <div class="form-row">
+            <span class="form-label">Harvest Cycle</span>
+            <select class="form-select" id="inp-harvest">
+              <option value="aligned">Aligned ✓</option>
+              <option value="misaligned">Misaligned ✗</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <span class="form-label">SMS Tips Sent</span>
+            <select class="form-select" id="inp-sms">
+              <option value="yes">Yes (3 weeks)</option>
+              <option value="no">No</option>
+            </select>
+          </div>
+          <div class="form-row">
+            <span class="form-label">Risk Flag</span>
+            <select class="form-select" id="inp-risk">
+              <option value="none">None</option>
+              <option value="low">Low — late payment</option>
+              <option value="high">High — fraud pattern</option>
+            </select>
+          </div>
+        </div>
+        <div class="pride-loop">
+          <div class="pride-step active" id="ps-prepare">P — Prepare</div>
+          <div class="pride-step" id="ps-run">R — Run</div>
+          <div class="pride-step" id="ps-inspect">I — Inspect</div>
+          <div class="pride-step" id="ps-decide">D — Decide</div>
+          <div class="pride-step" id="ps-execute">E — Execute</div>
+        </div>
+        <div class="packet">
+          <div class="packet-label">Early Savings Signal</div>
+          <div class="packet-row">
+            <span class="packet-value" id="savings-signal">Savings score: 72 / 100</span>
+            <span class="tag tag-green">Signal Active</span>
+          </div>
+          <div class="packet-row" style="margin-top:6px">
+            <span class="packet-value">Send SMS Tips</span>
+            <span class="tag tag-blue">Queued</span>
+          </div>
+          <div class="packet-row" style="margin-top:4px">
+            <span class="packet-value">Harvest Cycle Advice</span>
+            <span class="tag tag-blue">Queued</span>
+          </div>
+        </div>
+      </div>
+      <!-- Guardian placeholder -->
+      <div class="agent-col guardian" style="opacity:.4;flex:1">
+        <div class="agent-header">
+          <div class="agent-icon"><i class="ti ti-shield-half" aria-hidden="true"></i></div>
+          <div>
+            <div class="agent-name">Guardian Agent</div>
+            <div class="agent-role">Loan Triage</div>
+          </div>
+        </div>
+        <div class="packet">
+          <div class="packet-label">Awaiting handoff</div>
+          <div class="packet-value" style="color:var(--text2)">Tier 1 Loans &lt; KES 15k · Risk Flags Detected</div>
+        </div>
+      </div>
+      <!-- Hunter placeholder -->
+      <div class="agent-col hunter" style="opacity:.25;flex:1">
+        <div class="agent-header">
+          <div class="agent-icon"><i class="ti ti-headset" aria-hidden="true"></i></div>
+          <div>
+            <div class="agent-name">Hunter Agent</div>
+            <div class="agent-role">Human-in-Loop Coordinator</div>
+          </div>
+        </div>
+        <div class="packet"><div class="packet-label">Idle</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 1: Guardian Triage -->
+  <div id="panel1" class="canvas" style="display:none;flex-direction:column;min-height:auto">
+    <div style="display:flex;gap:0">
+      <div class="agent-col scout" style="opacity:.5;flex:1">
+        <div class="agent-header">
+          <div class="agent-icon"><i class="ti ti-user-search" aria-hidden="true"></i></div>
+          <div><div class="agent-name">Scout Agent</div><div class="agent-role">Handoff complete</div></div>
+        </div>
+        <div class="packet success">
+          <div class="packet-label">Transmitted packet</div>
+          <div class="packet-value" id="scout-summary-1"></div>
+          <div class="packet-row" style="margin-top:6px"><span class="tag tag-green">→ Guardian</span></div>
+        </div>
+      </div>
+      <div class="agent-col guardian" style="flex:2">
+        <div class="agent-header">
+          <div class="agent-icon"><i class="ti ti-shield-half" aria-hidden="true"></i></div>
+          <div><div class="agent-name">Guardian Agent</div><div class="agent-role">Loan Triage — Running checks</div></div>
+        </div>
+        <div class="pause-overlay" id="bias-pause">
+          <div class="pause-title"><i class="ti ti-pause-circle" aria-hidden="true"></i> GUARD: Bias Block Engaged</div>
+          <div class="pause-desc">Checking for demographic bias patterns before scoring. Audit trail entry #<span id="audit-num">A-0041</span> created.</div>
+        </div>
+        <div class="packet" id="tier-check">
+          <div class="packet-label">Tier Classification</div>
+          <div class="packet-row">
+            <span class="packet-value" id="tier-result">Analysing amount…</span>
+            <span class="tag" id="tier-tag">—</span>
+          </div>
+          <div class="tier-dots" id="tier-dots">
+            <div class="tier-dot active"></div>
+            <div class="tier-dot"></div>
+            <div class="tier-dot"></div>
+          </div>
+        </div>
+        <div class="packet" id="risk-check">
+          <div class="packet-label">Risk Flag Detection</div>
+          <div class="packet-row">
+            <span class="packet-value" id="risk-result">Scanning…</span>
+            <span class="tag" id="risk-tag">—</span>
+          </div>
+        </div>
+        <div class="packet" id="fraud-check">
+          <div class="packet-label">Fraud Alert Scan</div>
+          <div class="packet-row">
+            <span class="packet-value" id="fraud-result">Cross-referencing network…</span>
+            <span class="tag" id="fraud-tag">—</span>
+          </div>
+        </div>
+        <div class="pride-loop">
+          <div class="pride-step done">P — Prepare</div>
+          <div class="pride-step active" id="ps2-run">R — Run</div>
+          <div class="pride-step" id="ps2-inspect">I — Inspect</div>
+          <div class="pride-step">D — Decide</div>
+          <div class="pride-step">E — Execute</div>
+        </div>
+      </div>
+      <div class="agent-col hunter" style="opacity:.25;flex:1">
+        <div class="agent-header">
+          <div class="agent-icon"><i class="ti ti-headset" aria-hidden="true"></i></div>
+          <div><div class="agent-name">Hunter Agent</div><div class="agent-role">Standby</div></div>
+        </div>
+        <div class="packet"><div class="packet-label">Awaiting signal</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Decision Gate -->
+  <div id="panel2" class="canvas" style="display:none;flex-direction:column;min-height:auto">
+    <div style="display:flex;gap:0">
+      <div class="agent-col guardian" style="flex:1.5">
+        <div class="agent-header">
+          <div class="agent-icon"><i class="ti ti-shield-half" aria-hidden="true"></i></div>
+          <div><div class="agent-name">Guardian Agent</div><div class="agent-role">Decision Gate — PRIDE Inspect</div></div>
+        </div>
+        <div class="pause-overlay visible" id="ethics-pause">
+          <div class="pause-title"><i class="ti ti-pause-circle" aria-hidden="true"></i> PRIDE Loop — Inspect Point</div>
+          <div class="pause-desc" id="ethics-desc">All checks complete. Review triage result below before proceeding to routing decision.</div>
+        </div>
+        <div class="packet" id="decision-card" style="border-width:2px">
+          <div class="packet-label">Triage Decision</div>
+          <div class="packet-row">
+            <span class="packet-value" style="font-size:14px;font-weight:700" id="decision-text">Evaluating…</span>
+            <span class="tag" id="decision-tag">—</span>
+          </div>
+          <div id="decision-detail" style="margin-top:8px;font-size:11.5px;color:var(--text2);line-height:1.6"></div>
+        </div>
+        <div class="pride-loop">
+          <div class="pride-step done">P — Prepare</div>
+          <div class="pride-step done">R — Run</div>
+          <div class="pride-step active">I — Inspect</div>
+          <div class="pride-step" id="ps3-decide">D — Decide</div>
+          <div class="pride-step">E — Execute</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:10px">
+        <div class="transit-arrow active" id="routing-arrow">
+          <i class="ti ti-git-fork" aria-hidden="true"></i>
+          <span id="routing-label">Routing…</span>
+        </div>
+      </div>
+      <div class="agent-col" id="route-target" style="flex:1.5;opacity:.4">
+        <div style="padding:10px;display:flex;flex-direction:column;gap:10px">
+          <div id="route-approve" style="display:none">
+            <div class="agent-header" style="background:var(--green-l);border-color:#86efac;color:var(--green-d)">
+              <div class="agent-icon" style="background:var(--green);color:#fff"><i class="ti ti-check" aria-hidden="true"></i></div>
+              <div><div class="agent-name">Auto Approve</div><div class="agent-role">Set Repayment Terms</div></div>
+            </div>
+          </div>
+          <div id="route-hunter" style="display:none">
+            <div class="agent-header" style="background:var(--amber-l);border-color:#fcd34d;color:var(--amber-d)">
+              <div class="agent-icon" style="background:#d97706;color:#fff"><i class="ti ti-headset" aria-hidden="true"></i></div>
+              <div><div class="agent-name">Hunter Agent</div><div class="agent-role">HUNT Handoff</div></div>
+            </div>
+          </div>
+          <div id="route-info" class="packet" style="display:none"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 3: Hunter Review -->
+  <div id="panel3" class="canvas" style="display:none;flex-direction:column;min-height:auto">
+    <div style="display:flex;gap:0">
+      <div class="agent-col guardian" style="opacity:.5;flex:1">
+        <div class="agent-header">
+          <div class="agent-icon"><i class="ti ti-shield-half" aria-hidden="true"></i></div>
+          <div><div class="agent-name">Guardian Agent</div><div class="agent-role">Escalated to Hunter</div></div>
+        </div>
+        <div class="packet success">
+          <div class="packet-label">HUNT signal sent</div>
+          <div class="packet-value" id="hunt-signal"></div>
+        </div>
+      </div>
+      <div class="agent-col hunter" style="flex:2">
+        <div class="agent-header">
+          <div class="agent-icon"><i class="ti ti-headset" aria-hidden="true"></i></div>
+          <div><div class="agent-name">Hunter Agent</div><div class="agent-role">Human-in-Loop Coordinator — Active</div></div>
+        </div>
+        <div class="pause-overlay visible">
+          <div class="pause-title"><i class="ti ti-pause-circle" aria-hidden="true"></i> Pause Point — Elder / Officer Review</div>
+          <div class="pause-desc">Loan officer briefed. Awaiting community context check and elders review sign-off.</div>
+        </div>
+        <div class="packet warning">
+          <div class="packet-label">Review High-Risk Loans</div>
+          <div class="packet-row">
+            <span class="packet-value" id="review-detail">Loading case…</span>
+            <span class="tag tag-amber">Human Required</span>
+          </div>
+        </div>
+        <div class="packet">
+          <div class="packet-label">Brief Loan Officers</div>
+          <div class="packet-row">
+            <span class="packet-value">Case summary dispatched via SMS</span>
+            <span class="tag tag-green">Sent</span>
+          </div>
+        </div>
+        <div class="packet">
+          <div class="packet-label">Community Context Check</div>
+          <div class="packet-row">
+            <span class="packet-value">Elders review queue</span>
+            <span class="tag tag-amber">Pending</span>
+          </div>
+        </div>
+        <div class="pride-loop">
+          <div class="pride-step done">P — Prepare</div>
+          <div class="pride-step done">R — Run</div>
+          <div class="pride-step done">I — Inspect</div>
+          <div class="pride-step active">D — Decide</div>
+          <div class="pride-step">E — Execute</div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:4px">
+          <button class="btn btn-success" onclick="hunterApprove()" id="btn-approve-hunter">
+            <i class="ti ti-check" aria-hidden="true"></i> Approve Loan
+          </button>
+          <button class="btn btn-danger" onclick="hunterDecline()" id="btn-decline-hunter">
+            <i class="ti ti-x" aria-hidden="true"></i> Decline
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Outcome -->
+  <div id="panel4" class="canvas" style="display:none;flex-direction:column;min-height:auto">
+    <div style="padding:24px 20px;flex:1;display:flex;flex-direction:column;gap:14px;background:#fff">
+      <div id="outcome-card" class="packet" style="padding:16px;border-width:2px">
+        <div class="packet-label" style="font-size:13px">Final Outcome</div>
+        <div id="outcome-text" style="font-size:20px;font-weight:700;margin:8px 0"></div>
+        <div id="outcome-detail" style="font-size:13px;color:var(--text2);line-height:1.7"></div>
+      </div>
+      <div class="packet">
+        <div class="packet-label">Audit Trail</div>
+        <div id="audit-trail" style="font-family:var(--mono);font-size:11.5px;color:var(--text2);line-height:1.8"></div>
+      </div>
+      <div class="pride-loop">
+        <div class="pride-step done">P — Prepare</div>
+        <div class="pride-step done">R — Run</div>
+        <div class="pride-step done">I — Inspect</div>
+        <div class="pride-step done">D — Decide</div>
+        <div class="pride-step done">E — Execute</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTIVITY LOG -->
+  <div class="log-area" id="logArea">
+    <div class="log-line">
+      <span class="log-ts">00:00</span>
+      <span class="log-agent system">[SYSTEM]</span>
+      <span class="log-msg">Agent Pride Workflow prototype initialised. Configure a loan and click Run Simulation.</span>
+    </div>
+  </div>
+</div>
+
+<!-- GUARD BOTTOM RAIL -->
+<div class="guard-rail" style="justify-content:center">
+  <i class="ti ti-balance" aria-hidden="true"></i>
+  GUARD SAFETY RAILS
+  <span class="guard-pill">Ethics Audit</span>
+  <span class="guard-pill">Pause Points</span>
+  <span class="guard-pill">Elders Review</span>
+</div>
+
+<!-- CONTROLS -->
+<div class="controls">
+  <button class="btn btn-primary" id="btnRun" onclick="runSimulation()">
+    <i class="ti ti-player-play" aria-hidden="true"></i> Run Simulation
+  </button>
+  <button class="btn btn-secondary" id="btnNext" onclick="nextStep()" disabled>
+    <i class="ti ti-arrow-right" aria-hidden="true"></i> Next Step
+  </button>
+  <button class="btn btn-secondary" onclick="resetSim()">
+    <i class="ti ti-refresh" aria-hidden="true"></i> Reset
+  </button>
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Ready</span>
+  </div>
+</div>
+
+<script>
+let currentStep = 0;
+let simState = {};
+let stepReady = false;
+let logTime = 0;
+let huntDecision = null;
+
+function getInputs(){
+  return {
+    borrower: document.getElementById('inp-borrower').value,
+    amount: parseInt(document.getElementById('inp-amount').value)||12000,
+    savings: parseInt(document.getElementById('inp-savings').value)||72,
+    harvest: document.getElementById('inp-harvest').value,
+    sms: document.getElementById('inp-sms').value,
+    risk: document.getElementById('inp-risk').value,
+  };
+}
+
+function addLog(agent,msg,cls){
+  logTime++;
+  const ts = String(Math.floor(logTime/10)).padStart(2,'0')+':'+String(logTime%10)+'0';
+  const el = document.createElement('div');
+  el.className='log-line';
+  el.innerHTML=`<span class="log-ts">${ts}</span><span class="log-agent ${cls||agent.toLowerCase()}">[${agent}]</span><span class="log-msg"> ${msg}</span>`;
+  const log = document.getElementById('logArea');
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+}
+
+function setStatus(s){
+  const dot = document.getElementById('statusDot');
+  const txt = document.getElementById('statusText');
+  dot.className='status-dot '+(s==='running'?'running':s==='paused'?'paused':s==='done'?'done':'');
+  txt.textContent = s==='running'?'Running…':s==='paused'?'Paused — Human review':s==='done'?'Complete':'Ready';
+}
+
+function goStep(n){
+  document.getElementById('panel'+currentStep).style.display='none';
+  document.getElementById('panel'+n).style.display='';
+  document.getElementById('stepBtn'+currentStep).classList.remove('active');
+  document.getElementById('stepBtn'+n).classList.add('active');
+  currentStep = n;
+}
+
+function markStepDone(n){
+  const btn = document.getElementById('stepBtn'+n);
+  btn.classList.remove('active');
+  btn.classList.add('done');
+  btn.querySelector('.dot').textContent='✓';
+}
+
+async function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function runSimulation(){
+  document.getElementById('btnRun').disabled=true;
+  document.getElementById('btnNext').disabled=true;
+  simState = getInputs();
+  huntDecision = null;
+  
+  // Step 0 setup
+  document.getElementById('savings-signal').textContent = `Savings score: ${simState.savings} / 100`;
+  setStatus('running');
+  addLog('SCOUT','Initialising loan intake for borrower '+simState.borrower,'scout');
+  addLog('SCOUT',`Amount requested: KES ${simState.amount.toLocaleString()}. Savings score: ${simState.savings}`,'scout');
+  addLog('SCOUT','Sending SMS tips and harvest cycle advice to borrower…','scout');
+  await delay(1200);
+  addLog('GUARD','Audit trail entry A-'+Math.floor(1000+Math.random()*8999)+' created for application','guard');
+  await delay(700);
+  
+  // Move to step 1
+  markStepDone(0);
+  goStep(1);
+  document.getElementById('stepBtn1').classList.add('active');
+  
+  // Scout summary
+  document.getElementById('scout-summary-1').textContent =
+    `Borrower: ${simState.borrower} | KES ${simState.amount.toLocaleString()} | Risk: ${simState.risk}`;
+  
+  addLog('SCOUT','Handoff packet transmitted to Guardian Agent','scout');
+  await delay(600);
+  
+  // Bias pause
+  const biasP = document.getElementById('bias-pause');
+  biasP.classList.add('visible');
+  const auditN = 'A-'+Math.floor(1000+Math.random()*8999);
+  document.getElementById('audit-num').textContent = auditN;
+  addLog('GUARD','Bias Block engaged — checking demographic parity before scoring','guard');
+  addLog('GUARDIAN','Audit trail '+auditN+' created — bias scan running','guardian');
+  await delay(1400);
+  addLog('GUARDIAN','Bias check passed. Proceeding to tier classification','guardian');
+  
+  // Tier check
+  const tierDots = document.getElementById('tier-dots').children;
+  const isTier1 = simState.amount < 15000;
+  await delay(600);
+  tierDots[0].className='tier-dot pass';
+  tierDots[1].className='tier-dot active';
+  addLog('GUARDIAN',`Amount KES ${simState.amount.toLocaleString()} — classifying tier…`,'guardian');
+  await delay(700);
+  tierDots[1].className='tier-dot pass';
+  tierDots[2].className='tier-dot active';
+  await delay(600);
+  tierDots[2].className='tier-dot pass';
+  document.getElementById('tier-result').textContent = isTier1 ? 'Tier 1 — < KES 15k ✓' : 'Tier 2 — ≥ KES 15k';
+  const tierTag = document.getElementById('tier-tag');
+  tierTag.textContent = isTier1 ? 'Tier 1' : 'Tier 2';
+  tierTag.className = 'tag '+(isTier1?'tag-green':'tag-amber');
+  
+  // Risk check
+  await delay(700);
+  addLog('GUARDIAN','Scanning for risk flags: '+simState.risk,'guardian');
+  const hasRisk = simState.risk !== 'none';
+  document.getElementById('risk-result').textContent = hasRisk ? `Risk flag: ${simState.risk}` : 'No risk flags detected';
+  const riskTag = document.getElementById('risk-tag');
+  riskTag.textContent = hasRisk ? simState.risk.toUpperCase() : 'CLEAN';
+  riskTag.className = 'tag '+(simState.risk==='high'?'tag-red':hasRisk?'tag-amber':'tag-green');
+  
+  // Fraud check
+  await delay(600);
+  addLog('GUARDIAN','Cross-referencing fraud network database…','guardian');
+  const isFraud = simState.risk === 'high';
+  document.getElementById('fraud-result').textContent = isFraud ? 'Fraud pattern match — high confidence' : 'No fraud patterns detected';
+  const fraudTag = document.getElementById('fraud-tag');
+  fraudTag.textContent = isFraud ? 'ALERT' : 'CLEAR';
+  fraudTag.className = 'tag '+(isFraud?'tag-red':'tag-green');
+  if(isFraud) addLog('GUARD','FRAUD ALERT triggered — case flagged for Hunter escalation','guard');
+  
+  document.getElementById('ps2-inspect').classList.add('active');
+  await delay(800);
+  
+  // Move to step 2
+  markStepDone(1);
+  goStep(2);
+  document.getElementById('stepBtn2').classList.add('active');
+  
+  // Decision gate
+  const needsHunter = hasRisk || !isTier1;
+  const canAutoApprove = isTier1 && !hasRisk && simState.harvest==='aligned';
+  
+  document.getElementById('ethics-desc').textContent = canAutoApprove
+    ? 'All checks green. Loan qualifies for auto-approval via Guardian.'
+    : `Risk level: ${simState.risk || 'elevated'}. Route to Hunter for human-in-loop review.`;
+  
+  await delay(700);
+  addLog('GUARDIAN','Inspect point reached — evaluating routing decision','guardian');
+  
+  const decisionCard = document.getElementById('decision-card');
+  const decisionText = document.getElementById('decision-text');
+  const decisionTag = document.getElementById('decision-tag');
+  const decisionDetail = document.getElementById('decision-detail');
+  
+  if(canAutoApprove){
+    decisionText.textContent = 'Auto-Approve Small Loan';
+    decisionTag.textContent = 'APPROVE';
+    decisionTag.className = 'tag tag-green';
+    decisionCard.className = 'packet success';
+    decisionDetail.innerHTML = `Tier 1 (KES ${simState.amount.toLocaleString()}) · No risk flags · Harvest aligned<br>Auto-approve with repayment terms.`;
+    document.getElementById('route-approve').style.display='';
+    document.getElementById('route-info').style.display='';
+    document.getElementById('route-info').innerHTML = '<div class="packet-label">Repayment Terms</div><div class="packet-value">30-day term · 8% interest · SMS reminders enabled</div>';
+    addLog('GUARDIAN','Decision: AUTO-APPROVE — Tier 1, clean record, harvest aligned','guardian');
+  } else {
+    decisionText.textContent = 'Escalate to Hunter — HUNT Handoff';
+    decisionTag.textContent = needsHunter && isFraud ? 'FRAUD' : 'REVIEW';
+    decisionTag.className = 'tag '+(isFraud?'tag-red':'tag-amber');
+    decisionCard.className = 'packet '+(isFraud?'danger':'warning');
+    decisionDetail.innerHTML = `Risk: ${simState.risk} · ${!isTier1?'Amount above Tier 1 threshold':''}${simState.harvest==='misaligned'?' · Harvest misaligned':''}<br>Human-in-loop review required.`;
+    document.getElementById('route-hunter').style.display='';
+    document.getElementById('route-info').style.display='';
+    document.getElementById('route-info').innerHTML = '<div class="packet-label">HUNT signal</div><div class="packet-value">Case brief sent · Loan officer notified · Elders queue</div>';
+    addLog('GUARDIAN','Decision: HUNT HANDOFF — escalating to Hunter Agent','guardian');
+  }
+  
+  document.getElementById('route-target').style.opacity='1';
+  document.getElementById('routing-label').textContent = canAutoApprove ? 'Auto Approve' : 'HUNT Handoff';
+  document.getElementById('ps3-decide').classList.add('active');
+  
+  await delay(800);
+  
+  if(canAutoApprove){
+    // Skip Hunter, go directly to outcome
+    markStepDone(2);
+    markStepDone(3);
+    document.getElementById('stepBtn3').querySelector('.dot').textContent='↷';
+    goStep(4);
+    document.getElementById('stepBtn4').classList.add('active');
+    buildOutcome('approved-auto', simState);
+    addLog('GUARDIAN','Loan auto-approved. Repayment terms set. Audit logged.','guardian');
+    setStatus('done');
+    document.getElementById('btnRun').disabled=false;
+  } else {
+    // Go to Hunter
+    markStepDone(2);
+    goStep(3);
+    document.getElementById('stepBtn3').classList.add('active');
+    document.getElementById('hunt-signal').textContent =
+      `HUNT: ${simState.borrower} · KES ${simState.amount.toLocaleString()} · Risk: ${simState.risk}`;
+    document.getElementById('review-detail').textContent =
+      `Borrower ${simState.borrower} · KES ${simState.amount.toLocaleString()} · ${simState.risk==='high'?'Fraud pattern detected':'Elevated risk'}`;
+    addLog('HUNTER','HUNT signal received — case loaded for review','hunter');
+    addLog('HUNTER','Loan officer briefed via SMS. Elders review queue updated.','hunter');
+    setStatus('paused');
+    document.getElementById('btnRun').disabled=false;
+  }
+}
+
+function hunterApprove(){
+  huntDecision = 'approved';
+  document.getElementById('btn-approve-hunter').disabled=true;
+  document.getElementById('btn-decline-hunter').disabled=true;
+  addLog('HUNTER','Manual approval granted by loan officer + elders sign-off','hunter');
+  addLog('GUARD','Ethics audit passed. Final approval logged.','guard');
+  markStepDone(3);
+  goStep(4);
+  document.getElementById('stepBtn4').classList.add('active');
+  buildOutcome('approved-manual', simState);
+  setStatus('done');
+}
+
+function hunterDecline(){
+  huntDecision = 'declined';
+  document.getElementById('btn-approve-hunter').disabled=true;
+  document.getElementById('btn-decline-hunter').disabled=true;
+  addLog('HUNTER','Loan declined — risk too high. Borrower notified with feedback.','hunter');
+  addLog('GUARD','Decline logged. Audit trail complete.','guard');
+  markStepDone(3);
+  goStep(4);
+  document.getElementById('stepBtn4').classList.add('active');
+  buildOutcome('declined', simState);
+  setStatus('done');
+}
+
+function buildOutcome(type, s){
+  const card = document.getElementById('outcome-card');
+  const text = document.getElementById('outcome-text');
+  const detail = document.getElementById('outcome-detail');
+  const trail = document.getElementById('audit-trail');
+  
+  const ts = new Date().toISOString().slice(0,19).replace('T',' ');
+  
+  if(type==='approved-auto'){
+    card.className='packet success';
+    text.textContent='✓ Loan Approved — Auto (Guardian)';
+    text.style.color='#16a34a';
+    detail.innerHTML=`Borrower: <strong>${s.borrower}</strong> · KES ${s.amount.toLocaleString()}<br>
+      Tier 1 auto-approval · 30-day repayment term · 8% interest<br>
+      SMS confirmation dispatched. Next harvest reminder scheduled.`;
+  } else if(type==='approved-manual'){
+    card.className='packet success';
+    text.textContent='✓ Loan Approved — Manual (Hunter + Elders)';
+    text.style.color='#16a34a';
+    detail.innerHTML=`Borrower: <strong>${s.borrower}</strong> · KES ${s.amount.toLocaleString()}<br>
+      Approved by loan officer with community elders sign-off.<br>
+      Risk flag noted in file. Enhanced monitoring enabled.`;
+  } else {
+    card.className='packet danger';
+    text.textContent='✗ Loan Declined';
+    text.style.color='#dc2626';
+    detail.innerHTML=`Borrower: <strong>${s.borrower}</strong> · KES ${s.amount.toLocaleString()}<br>
+      Risk level: ${s.risk}. Decline rationale provided to borrower.<br>
+      Financial literacy resources and savings plan sent via SMS.`;
+  }
+  
+  trail.innerHTML=`
+[${ts}] APP-${Math.floor(10000+Math.random()*89999)} | Scout intake | Amount: KES ${s.amount.toLocaleString()}<br>
+[${ts}] GUARD | Bias block check — PASSED<br>
+[${ts}] GUARDIAN | Tier: ${s.amount<15000?'1':'2'} | Risk: ${s.risk} | Fraud: ${s.risk==='high'?'DETECTED':'NONE'}<br>
+[${ts}] PRIDE | Inspect pause point — completed<br>
+[${ts}] ${type.includes('manual')?'HUNTER | Officer + Elders review — sign-off granted':'GUARDIAN | Auto-routing decision executed'}<br>
+[${ts}] GUARD | Ethics audit — PASSED | Outcome: ${type.toUpperCase()}<br>
+[${ts}] SYSTEM | Audit trail sealed and archived`;
+}
+
+function nextStep(){
+  if(currentStep < 4) goStep(currentStep+1);
+}
+
+function resetSim(){
+  // Reset all panels
+  for(let i=1;i<=4;i++){
+    document.getElementById('panel'+i).style.display='none';
+    const btn = document.getElementById('stepBtn'+i);
+    btn.classList.remove('active','done');
+    btn.querySelector('.dot').textContent=i+1;
+  }
+  goStep(0);
+  document.getElementById('stepBtn0').classList.remove('done');
+  document.getElementById('stepBtn0').querySelector('.dot').textContent='1';
+  document.getElementById('stepBtn0').classList.add('active');
+  
+  // Reset PRIDE steps
+  ['prepare','run','inspect','decide','execute'].forEach(s=>{
+    const el = document.getElementById('ps-'+s);
+    if(el){el.className='pride-step';if(s==='prepare')el.classList.add('active');}
+  });
+  
+  // Reset log
+  document.getElementById('logArea').innerHTML=
+    '<div class="log-line"><span class="log-ts">00:00</span><span class="log-agent system">[SYSTEM]</span><span class="log-msg"> Reset. Configure a new loan and click Run Simulation.</span></div>';
+  logTime=0;
+  
+  // Reset controls
+  document.getElementById('btnRun').disabled=false;
+  document.getElementById('btnNext').disabled=true;
+  document.getElementById('bias-pause').classList.remove('visible');
+  
+  ['route-approve','route-hunter','route-info'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.style.display='none';
+  });
+  
+  setStatus('');
+  simState={};
+  huntDecision=null;
+}
+</script>
